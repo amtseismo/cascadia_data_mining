@@ -1,7 +1,7 @@
 # Cascadia Data Mining
 
 ## 1. Download Training Data
-**cnn\_training\_data\_[p,s,n].py** gets phase picks for events in the PNSN and NCEDC catalog and queries libcomcat for manual picks.  The three scripts are all the same aside from the myphases option being set to P, S, or N to download P, S, and noise data.  Uses the utility download_tools.py.  Saves files pnsn_ncedc_3comp_P_100_training_data.pkl (should have used .h5) that are numpy arrays of dimension Nx3001 (30 seconds*100 sps) with the pick time in the middle.
+**cnn\_training\_data.py** gets phase picks for events in the PNSN and NCEDC catalog and queries libcomcat for manual picks.  For whichever type of data you'd like to download you can change the myphases option to P, S, or N to download P, S, and noise data.  Uses the utility **download\_tools.py.  Saves files **pnsn\_ncedc\_3comp\_P\_100\_training\_data.pkl (should have used .h5) that are numpy arrays of dimension Nx3001 (30 seconds*100 sps) with the pick time in the middle.  Requires catalog pickle file **pnsn\_ncedc\_2005\_2020.pkl.
 ## 2. Train the convolutional neural network (CNN)
 **unet\_3comp\_training\_logfeatures.py** trains the networks.  It can be run as a command line tool with the following options: 
 * --subset [1 or 0] where 0 means train on the full dataset and 1 means train on a subset
