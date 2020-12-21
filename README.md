@@ -10,10 +10,10 @@
 * --drop [1 or 0] where 1 adds a drop layer to the network architecture and 0 does not
 * --plots [1 or 0] where 1 makes various plots
 * --resume [1 or 0] where 1 resumes training from where it leftoff and 0 trains from scratch
-* --large [0.5,1,2,or 4] where the number refers to the model size
+* --large X where X can be 0.5,1,2,or 4 which refers to the model size
 * --epochs X where X refers to the number of training epochs desired
 * --std X where X refers to the standard deviation in seconds of the target gaussian
-* --sr where sr refers to the data sample rate
+* --sr X where X refers to the data sample rate
 ## 3. Check CNN performance
 ## 4. Apply the CNN to some data to make picks
 ## 5. Generate synthetic data for associator
