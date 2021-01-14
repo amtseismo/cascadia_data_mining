@@ -20,24 +20,29 @@ def add_time(layers):
 
 
 def lon_loss(y_true,y_pred):
-   return tf.reduce_mean(tf.square(y_true[:,:,0]-y_pred[:,:,0]))
+   mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+   return tf.reduce_mean(tf.square(y_true[:,:,0]-y_pred[:,:,0])*mask)
 
 def lat_loss(y_true,y_pred):
-    return tf.reduce_mean(tf.square(y_true[:,:,1]-y_pred[:,:,1]))
+    mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+    return tf.reduce_mean(tf.square(y_true[:,:,1]-y_pred[:,:,1])*mask)
 
 def depth_loss(y_true,y_pred):
-   return tf.reduce_mean(tf.square(y_true[:,:,2]-y_pred[:,:,2]))
+    mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+    return tf.reduce_mean(tf.square(y_true[:,:,2]-y_pred[:,:,2])*mask)
 
 def mag_loss(y_true,y_pred):
-   return tf.reduce_mean(tf.square(y_true[:,:,3]-y_pred[:,:,3]))
+    mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+    return tf.reduce_mean(tf.square(y_true[:,:,3]-y_pred[:,:,3])*mask)
 
 def time_loss(y_true,y_pred):
-   return tf.reduce_mean(tf.square(y_true[:,:,4]-y_pred[:,:,4]))
+   mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+   return tf.reduce_mean(tf.square(y_true[:,:,4]-y_pred[:,:,4])*mask)
 
     
 
 def loss(y_true,y_pred):
-    print('jere',y_true,y_pred)
+    
     return (lon_loss(y_true,y_pred)
             +lat_loss(y_true,y_pred)
             +depth_loss(y_true,y_pred)
