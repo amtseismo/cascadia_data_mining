@@ -81,7 +81,7 @@ latp=latp/np.sum(latp)
 # # do the shifts and make batches
 def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=10000):
     while True:
-        # defines coefficients for gmm
+        #defines coefficients for gmm
         a1,a2,a3,a4,a5=-1.96494392,  0.89260686, -0.12470324, -1.43533434, -0.00561138
         outfile=np.zeros((0,11))
         count=0
@@ -90,13 +90,14 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         jj=0
         sourceepoch=0
         while sourceepoch < 86400*7:
+            #print(sourceepoch)
             sourcelon=np.random.uniform(-132.5,-116.5)
             sourcelat=np.random.choice(lat,p=latp)
             sourcedepth=np.random.uniform(0,100)
             sourcemag=np.random.uniform(1,6) # np.random.exponential(np.log(10)*1)
             dt=np.random.exponential(11564)
             if len(outfile)>0:
-                sourceepoch=dt+outfile[-1,9]
+                sourceepoch=dt+sourceepoch
             else:
                 sourceepoch=dt    
             # print("Trying earthquake # "+str(len(np.unique(outfile[:,9]))+1))
@@ -193,7 +194,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                                 outfile=np.append(outfile,evoutfile,axis=0)
                             else:
                                 outfile=np.append(outfile,evoutfile,axis=0)
-        
+         
         # ADD SYNTHETIC NOISE
         fac=5
         outfilen=np.zeros((fac*len(outfile),11))
@@ -212,7 +213,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
             outfilen[count,9]=0
             outfilen[count,10]=0
             count+=1
-                
+                 
         # COMBINE EQS AND NOISE
         allout=np.concatenate((outfile,outfilen))
         inds=np.argsort(allout[:,4])
@@ -221,11 +222,11 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         #print(allout.shape)
         if allout.shape[1]>batch_length:
             allout=allout[:,:batch_length,:]
-       #     print("clip")
+        #     print("clip")
         else:
             allout=np.append(allout,np.zeros((1,batch_length-allout.shape[1],11)),axis=1)
         #    print("add")
-        
+         
         if plots:
             # PLOT RESULTS
             pind=np.where(allout[0,:,3]==0)
