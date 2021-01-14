@@ -35,7 +35,7 @@ def get_valid_loss(model,x_develop,y_develop,batch_size=32):
     
 if __name__=="__main__":
     batch_size=32 # specify batch size
-    model=build_model(batch_size) # build the model with that batch size
+    model=build_model(batch_size,use_residual=True) # build the model with that batch size
     length=x_train.shape[1] # gets batch length (10000)
     count=0
     start=0
@@ -67,7 +67,8 @@ if __name__=="__main__":
         if start >= length -1: # if youve reached the end of the batch
             print('End of batch '+str(len(avail_index)//batch_size)+' steps left')
             losses.append(np.mean(_bloss,axis=0)) # save the mean of the batch loss
-            print(np.mean(_bloss,axis=0))
+            for _n,_l in zip(model.metrics_names,np.mean(_bloss,axis=0)):
+                print(_n,_l)
             _bloss=[] # reset batch loss
 
             if len(avail_index) <= batch_size: # if you dont have enough weeks for another full batch
