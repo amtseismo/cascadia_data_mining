@@ -16,31 +16,32 @@ def add_time(layers):
     
     output=tf.concat(output_slices[0:4]+[new_time],axis=2)
     return output
-    
-
 
 def lon_loss(y_true,y_pred):
    mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-   return tf.reduce_mean(tf.square(y_true[:,:,0]-y_pred[:,:,0])*mask)
+   lonfac=1/0.0009280954987236569/1000
+   return tf.reduce_mean(tf.square(y_true[:,:,0]-y_pred[:,:,0])*mask)*lonfac
 
 def lat_loss(y_true,y_pred):
+    latfac=1/0.0008034709946970919/1000
     mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-    return tf.reduce_mean(tf.square(y_true[:,:,1]-y_pred[:,:,1])*mask)
+    return tf.reduce_mean(tf.square(y_true[:,:,1]-y_pred[:,:,1])*mask)*latfac
 
 def depth_loss(y_true,y_pred):
+    depfac=1/0.01/1000
     mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-    return tf.reduce_mean(tf.square(y_true[:,:,2]-y_pred[:,:,2])*mask)
+    return tf.reduce_mean(tf.square((y_true[:,:,2]-y_pred[:,:,2]))*mask)*depfac
 
 def mag_loss(y_true,y_pred):
+    magfac=1/0.02/1000
     mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-    return tf.reduce_mean(tf.square(y_true[:,:,3]-y_pred[:,:,3])*mask)
+    return tf.reduce_mean(tf.square(y_true[:,:,3]-y_pred[:,:,3])*mask)*magfac
 
 def time_loss(y_true,y_pred):
-   mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-   return tf.reduce_mean(tf.square(y_true[:,:,4]-y_pred[:,:,4])*mask)
-
+    timefac=1/2.8935185185185184e-06/1000
+    mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+    return tf.reduce_mean(tf.square(y_true[:,:,4]-y_pred[:,:,4])*mask)*timefac
     
-
 def loss(y_true,y_pred):
     
     return (lon_loss(y_true,y_pred)
@@ -48,9 +49,6 @@ def loss(y_true,y_pred):
             +depth_loss(y_true,y_pred)
             +mag_loss(y_true,y_pred)
             +time_loss(y_true,y_pred))
-
-
-
 
 def build_model(batch_size=32,use_residual=False):
 
@@ -68,12 +66,8 @@ def build_model(batch_size=32,use_residual=False):
     if use_residual:
         regression=tf.keras.layers.Lambda(add_time)([input_layer,regression])
 
-
-    
     classification=tf.keras.layers.Dense(1,activation='sigmoid')(out_head)
 
-
-    
     model =tf.keras.models.Model(input_layer,[regression,classification])
     opt=tf.keras.optimizers.Adam(1e-3)
     model.compile(loss=[loss,'binary_crossentropy'],optimizer=opt, metrics=[[lon_loss,lat_loss,depth_loss,mag_loss,time_loss],[]])
