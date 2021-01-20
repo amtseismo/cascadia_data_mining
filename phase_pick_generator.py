@@ -116,7 +116,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
             #     ax[2].plot(sourcelon,sourcelat,'ko',markersize=12)
             #     im2=ax[2].scatter(stas['Longitude'],stas['Latitude'],s=25,c=gm,marker='^')
             #     fig.colorbar(im2, ax=ax[2])
-            if np.max(gm)>1e-06: # if ground motion is recordable
+            if np.max(gm)>5e-06: # if ground motion is recordable
                 for ii in range(len(stas)):       
                     if gm[ii]>=1e-06 and dists[ii]/300 < 0.5*np.random.uniform(): # if ground motion at station is recordable and adding a random drop term in here to account for missing/bad stations
                         dist=dists[ii]
