@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
-from scipy.interpolate import interp2d
-import datetime
+from scipy.interpolate import RegularGridInterpolator
+#import datetime
 
 def distance(origin, destination):
     lat1, lon1 = origin
@@ -43,36 +43,38 @@ stas=stas.drop_duplicates(subset ="Station")
 # Verticals:BHZ,EHZ,HHZ
 # BOTH:BH1,BH2,HH1,HH2
 
-# LOAD VELOCITY MODELS
+# LOAD VELOCITY MODELS and CREATE INTERP FUNCTIONS
 names=['c3', 'e3', 'j1', 'k3', 'n3', 'p4', 's4', 'O0', 'gil7'] 
 for name in names:
+    ttdists, ttdepths, ttelevs, ptt_all, stt_all = pickle.load( open(name+'.pkl', 'rb' ) )
     if name=='c3':
-        dists, depths, parv, sarv = pickle.load( open( name+".pkl", "rb" ) )
+        c3p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        c3s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None)
+    elif name=='e3':
+        e3p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        e3s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None)    
+    elif name=='j1':
+        j1p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        j1s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None) 
+    elif name=='k3':
+        k3p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        k3s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None)    
+    elif name=='n3':
+        n3p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        n3s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None)   
+    elif name=='p4':
+        p4p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        p4s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None)    
+    elif name=='s4':
+        s4p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        s4s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None)
+    elif name=='O0':
+        O0p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        O0s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None) 
     else:
-        _,_,ptmp,stmp = pickle.load( open( name+".pkl", "rb" ) )
-        parv=np.dstack((parv,ptmp))
-        sarv=np.dstack((sarv,stmp))
-
-# CREATE INTERP FUNCTIONS
-c3p=interp2d(dists,depths,parv[:,:,0],fill_value=0)
-c3s=interp2d(dists,depths,sarv[:,:,0],fill_value=0)
-e3p=interp2d(dists,depths,parv[:,:,1],fill_value=0)
-e3s=interp2d(dists,depths,sarv[:,:,1],fill_value=0)
-j1p=interp2d(dists,depths,parv[:,:,2],fill_value=0)
-j1s=interp2d(dists,depths,sarv[:,:,2],fill_value=0)
-k3p=interp2d(dists,depths,parv[:,:,3],fill_value=0)
-k3s=interp2d(dists,depths,sarv[:,:,3],fill_value=0)
-n3p=interp2d(dists,depths,parv[:,:,4],fill_value=0)
-n3s=interp2d(dists,depths,sarv[:,:,4],fill_value=0)
-p4p=interp2d(dists,depths,parv[:,:,5],fill_value=0)
-p4s=interp2d(dists,depths,sarv[:,:,5],fill_value=0)
-s4p=interp2d(dists,depths,parv[:,:,6],fill_value=0)
-s4s=interp2d(dists,depths,sarv[:,:,6],fill_value=0)
-O0p=interp2d(dists,depths,parv[:,:,7],fill_value=0)
-O0s=interp2d(dists,depths,sarv[:,:,7],fill_value=0)
-gil7p=interp2d(dists,depths,parv[:,:,8],fill_value=0)
-gil7s=interp2d(dists,depths,sarv[:,:,8],fill_value=0)
-
+        gil7p=RegularGridInterpolator((ttdepths, ttdists, ttelevs), ptt_all, bounds_error=False, fill_value=None)
+        gil7s=RegularGridInterpolator((ttdepths, ttdists, ttelevs), stt_all, bounds_error=False, fill_value=None) 
+        
 # SYNTHETIC SOURCE LOCATIONS
 lat=np.linspace(39,51.5,1000000)# want uniform geographic sampling
 latp=np.sin(lat*np.pi/180)
@@ -87,7 +89,6 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         count=0
         ps=np.zeros((len(stas)))
         ss=np.zeros((len(stas)))
-        jj=0
         sourceepoch=0
         while sourceepoch < 86400*7:
             #print(sourceepoch)
@@ -116,48 +117,49 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
             #     ax[2].plot(sourcelon,sourcelat,'ko',markersize=12)
             #     im2=ax[2].scatter(stas['Longitude'],stas['Latitude'],s=25,c=gm,marker='^')
             #     fig.colorbar(im2, ax=ax[2])
-            if np.max(gm)>5e-06: # if ground motion is recordable
+            if np.max(gm)>1e-05: # if ground motion is recordable
                 for ii in range(len(stas)):       
-                    if gm[ii]>=1e-06 and dists[ii]/300 < 0.5*np.random.uniform(): # if ground motion at station is recordable and adding a random drop term in here to account for missing/bad stations
+                    if gm[ii]>=1e-05 and dists[ii]/300 < 0.375*np.random.uniform(): # if ground motion at station is recordable and adding a random drop term in here to account for missing/bad stations
                         dist=dists[ii]
+                        elev=stas.iloc[ii]['Elevation']/1000
                         if sourcelon<=-125:
-                            mod='j1'
-                            ps[ii]=j1p(dist,sourcedepth)
-                            ss[ii]=j1s(dist,sourcedepth)
+                            #mod='j1'
+                            ps[ii]=np.float(j1p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(j1s((sourcedepth+elev,dist,elev)))
                         elif sourcelat<=42:
-                            mod='gil7'
-                            ps[ii]=gil7p(dist,sourcedepth)
-                            ss[ii]=gil7s(dist,sourcedepth)
+                            #mod='gil7'
+                            ps[ii]=np.float(gil7p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(gil7s((sourcedepth+elev,dist,elev)))
                         elif sourcelat>42 and sourcelat<=43:
-                            mod='k3'
-                            ps[ii]=k3p(dist,sourcedepth)
-                            ss[ii]=k3s(dist,sourcedepth)
+                            #mod='k3'
+                            ps[ii]=np.float(k3p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(k3s((sourcedepth+elev,dist,elev)))
                         elif sourcelat>43 and sourcelat<=45.5:
-                            mod='O0'
-                            ps[ii]=O0p(dist,sourcedepth)
-                            ss[ii]=O0s(dist,sourcedepth)
+                            #mod='O0'
+                            ps[ii]=np.float(O0p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(O0s((sourcedepth+elev,dist,elev)))
                         elif sourcelat>45.5 and sourcelat<=47 and sourcelon>-120.5:  
-                            mod='e3'
-                            ps[ii]=e3p(dist,sourcedepth)
-                            ss[ii]=e3s(dist,sourcedepth)
+                            #mod='e3'
+                            ps[ii]=np.float(e3p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(e3s((sourcedepth+elev,dist,elev)))
                         elif sourcelat>47 and sourcelon>-120.5:  
-                            mod='n3'
-                            ps[ii]=n3p(dist,sourcedepth)
-                            ss[ii]=n3s(dist,sourcedepth)
+                            #mod='n3'
+                            ps[ii]=np.float(n3p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(n3s((sourcedepth+elev,dist,elev)))
                         elif sourcelon>-122.69 and sourcelon<=-121.69 and sourcelat>45.69 and sourcelat<=46.69:
-                            mod='s4'
-                            ps[ii]=s4p(dist,sourcedepth)
-                            ss[ii]=s4s(dist,sourcedepth)
+                            #mod='s4'
+                            ps[ii]=np.float(s4p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(s4s((sourcedepth+elev,dist,elev)))
                         elif sourcelon>-122.5:
-                            mod='c3'
-                            ps[ii]=c3p(dist,sourcedepth)
-                            ss[ii]=c3s(dist,sourcedepth)
+                            #mod='c3'
+                            ps[ii]=np.float(c3p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(c3s((sourcedepth+elev,dist,elev)))
                         else:
-                            mod='p4'
-                            ps[ii]=p4p(dist,sourcedepth)
-                            ss[ii]=p4s(dist,sourcedepth)
+                            #mod='p4'
+                            ps[ii]=np.float(p4p((sourcedepth+elev,dist,elev)))
+                            ss[ii]=np.float(p4s((sourcedepth+elev,dist,elev)))
                         if ps[ii]>0:
-                            # Pick Lon, Pick Lat, Pick Elev, P or S, Pick Time, Source Longitude, Source Latitude, Source Depth, Source Magnitude, Source Time])
+                            # Pick Lon, Pick Lat, Pick Elev, P or S, Pick Time, Source Longitude, Source Latitude, Source Depth, Source Magnitude, Travel Time])
                             evoutfile=np.zeros((2,11))
                             evoutfile[0,0]=stas.iloc[ii]['Longitude']
                             evoutfile[0,1]=stas.iloc[ii]['Latitude']
@@ -235,21 +237,24 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
             plt.figure()
             plt.scatter(allout[0,pind,4],allout[0,pind,1],s=25,c=allout[0,pind,-2],marker='+')
             plt.scatter(allout[0,sind,4],allout[0,sind,1],s=25,c=allout[0,sind,-2],marker='x')
-            plt.plot(allout[0,np.where(allout[0,:,-1]!=0),-2],allout[0,np.where(allout[0,:,-1]!=0),-5],'ko')
+            plt.plot(allout[0,np.where(allout[0,:,-1]!=0),4]-allout[0,np.where(allout[0,:,-1]!=0),9],allout[0,np.where(allout[0,:,-1]!=0),-5],'ko')
+            plt.ylim((39,51.5))
             
-            unisou=np.unique(outfile[:,9])
+            sourceepoch=outfile[:,4]-outfile[:,9]
+            unisou=np.unique(sourceepoch)
             bc=np.loadtxt('bc.outline')
             ca=np.loadtxt('ca.outline')
             ore=np.loadtxt('or.outline')
             wa=np.loadtxt('wa.outline')
             ida=np.loadtxt('id.outline')
             nv=np.loadtxt('nv.outline')
-            for ind in range(len(unisou)):
-                tmpsource=outfile[outfile[:,9]==np.unique(outfile[:,9])[ind]]
+            for ind in range(10): #len(unisou)):
+                inds=np.where(sourceepoch==unisou[ind])
+                tmpsource=outfile[inds,:][0,:,:]
                 plt.figure(figsize=(7,9))
                 # Pick Lon, Pick Lat, Pick Elev, P or S, Pick Time, Source Longitude, Source Latitude, Source Depth, Source Magnitude, Source Time])
                 plt.plot(tmpsource[0,5],tmpsource[0,6],'ko',markersize=5)
-                plt.scatter(tmpsource[:,0],tmpsource[:,1],s=25,c=tmpsource[:,4],marker='^')
+                plt.scatter(tmpsource[:,0],tmpsource[:,1],s=25,c=tmpsource[:,9],marker='^',vmin=0,vmax=50)
                 plt.plot(wa[:,1],wa[:,0])
                 plt.plot(bc[:,1],bc[:,0])
                 plt.plot(ore[:,1],ore[:,0])
