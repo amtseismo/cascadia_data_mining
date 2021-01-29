@@ -90,13 +90,14 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         ps=np.zeros((len(stas)))
         ss=np.zeros((len(stas)))
         sourceepoch=0
-        while sourceepoch < 86400*7:
+        length_in_seconds=86400 # one day
+        while sourceepoch < length_in_seconds: 
             #print(sourceepoch)
             sourcelon=np.random.uniform(-132.5,-116.5)
             sourcelat=np.random.choice(lat,p=latp)
             sourcedepth=np.random.uniform(0,100)
             sourcemag=np.random.uniform(1,6) # np.random.exponential(np.log(10)*1)
-            dt=np.random.exponential(11564)
+            dt=np.random.exponential(4000) #(11564)
             if len(outfile)>0:
                 sourceepoch=dt+sourceepoch
             else:
@@ -183,6 +184,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                             evoutfile[1,8]=sourcemag
                             evoutfile[1,9]=ss[ii]
                             evoutfile[1,10]=1
+                            # print('Event picks ='+str(len(evoutfile)))
                             tmp=np.random.uniform() # make a random variable
                             if tmp < 0.1: # drop the P
                                 outfile=np.append(outfile,evoutfile[1,:].reshape(1,-1),axis=0)
@@ -196,18 +198,26 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                                 outfile=np.append(outfile,evoutfile,axis=0)
                             else:
                                 outfile=np.append(outfile,evoutfile,axis=0)
-         
-        # ADD SYNTHETIC NOISE
-        fac=5
-        outfilen=np.zeros((fac*len(outfile),11))
+        
+        # print('Real earthquake picks ='+str(len(outfile)))
+        # If too many picks, adjust
+        if len(outfile)>batch_length:
+            # print("before="+str(len(outfile)))
+            deck = list(range(1, len(outfile)))
+            np.random.shuffle(deck)
+            deck=np.sort(deck[:np.random.randint(200,300)])
+            outfile=outfile[deck,:]
+            # print("after="+str(len(outfile)))
+        # ADD SYNTHETIC NOISE    
+        outfilen=np.zeros((batch_length-len(outfile),11))
         count=0
-        while count < fac*len(outfile):
+        while count < len(outfilen):
             ii=np.random.choice(np.arange(len(stas)))
             outfilen[count,0]=stas.iloc[ii]['Longitude']
             outfilen[count,1]=stas.iloc[ii]['Latitude']
             outfilen[count,2]=stas.iloc[ii]['Elevation']
             outfilen[count,3]=np.random.choice([0,1])
-            outfilen[count,4]=np.random.uniform(low=0,high=np.max(outfile[:,4]))
+            outfilen[count,4]=np.random.uniform(low=0,high=np.max([np.max(outfile[:,4]),length_in_seconds]))
             outfilen[count,5]=0
             outfilen[count,6]=0
             outfilen[count,7]=0
@@ -221,7 +231,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         inds=np.argsort(allout[:,4])
         allout=allout[inds,:]  
         allout=allout[np.newaxis,:,:]
-        #print(allout.shape)
+        print(allout.shape)
         if allout.shape[1]>batch_length:
             allout=allout[:,:batch_length,:]
         #     print("clip")
@@ -269,6 +279,10 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
 # generate batch data
 def get_generator():
     return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=10000)
+
+# generate batch data
+def get_small_generator():
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500)
 
 if __name__=="__main__":
     my_data=get_generator()
