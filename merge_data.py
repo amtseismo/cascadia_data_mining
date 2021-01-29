@@ -11,8 +11,8 @@ Loads all data and separates into train, test, and develop
 from glob import glob
 import numpy as np
 import pickle
-
-data_files=glob('associator_training_data/*.npy')
+ 
+data_files=glob('/projects/amt/shared/cascadia_data_mining/cnn/associator_training_data/*.npy')
 data=[np.load(f) for f in data_files]
 data_all=np.concatenate(data,axis=0)
 print(data_all.shape)
@@ -21,7 +21,7 @@ np.save('comb_data.npy',data_all)
 test=[]
 train=[]
 develop=[]
-for i,v in enumerate(data):
+for i,v in enumerate(data_all):
     _throw=np.random.uniform()
     if _throw>.9:
         test.append(i)
