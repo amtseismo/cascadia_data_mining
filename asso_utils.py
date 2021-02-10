@@ -65,3 +65,16 @@ def decode_y_nomag(y):
     reg[:,:,2]=reg[:,:,2]*100
     reg[:,:,3]=reg[:,:,3]*(50)
     return reg
+
+def fix_y_batch_phases(reg,lab):
+    # Source longitude, latitude, depth, magnitude, travel time, true phase
+    reg=reg[:,:,-1] # gets last regression column
+    mask=lab[:,:,0]==0 # makes a mask where the noise is
+    reg[mask]=0 # makes regression values zero at those points
+    reg=reg[:,:,np.newaxis]
+    tmp=np.concatenate((reg,lab),axis=2)
+    return tmp
+    
+def decode_y_phases(y):
+    reg,classifier=y
+    return reg

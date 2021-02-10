@@ -81,23 +81,23 @@ latp=np.sin(lat*np.pi/180)
 latp=latp/np.sum(latp)
 
 # # do the shifts and make batches
-def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=10000):
+def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=10000,duration=7,ri=1800,phases=False):
     while True:
         #defines coefficients for gmm
         a1,a2,a3,a4,a5=-1.96494392,  0.89260686, -0.12470324, -1.43533434, -0.00561138
-        outfile=np.zeros((0,11))
+        outfile=np.zeros((0,12))
         count=0
         ps=np.zeros((len(stas)))
         ss=np.zeros((len(stas)))
         sourceepoch=0
-        length_in_seconds=86400 # one day
+        length_in_seconds=86400*duration # one day
         while sourceepoch < length_in_seconds: 
             #print(sourceepoch)
             sourcelon=np.random.uniform(-132.5,-116.5)
             sourcelat=np.random.choice(lat,p=latp)
             sourcedepth=np.random.uniform(0,100)
             sourcemag=np.random.uniform(1,6) # np.random.exponential(np.log(10)*1)
-            dt=np.random.exponential(4000) #(11564)
+            dt=np.random.exponential(ri) #(11564)
             if len(outfile)>0:
                 sourceepoch=dt+sourceepoch
             else:
@@ -160,8 +160,8 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                             ps[ii]=np.float(p4p((sourcedepth+elev,dist,elev)))
                             ss[ii]=np.float(p4s((sourcedepth+elev,dist,elev)))
                         if ps[ii]>0:
-                            # Pick Lon, Pick Lat, Pick Elev, P or S, Pick Time, Source Longitude, Source Latitude, Source Depth, Source Magnitude, Travel Time])
-                            evoutfile=np.zeros((2,11))
+                            # Pick Lon, Pick Lat, Pick Elev, Assigned P or S, Pick Time, Source Longitude, Source Latitude, Source Depth, Source Magnitude, Travel Time, True P or S, EQ or Noise])
+                            evoutfile=np.zeros((2,12))
                             evoutfile[0,0]=stas.iloc[ii]['Longitude']
                             evoutfile[0,1]=stas.iloc[ii]['Latitude']
                             evoutfile[0,2]=stas.iloc[ii]['Elevation']
@@ -173,6 +173,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                             evoutfile[0,8]=sourcemag
                             evoutfile[0,9]=ps[ii]
                             evoutfile[0,10]=1
+                            evoutfile[0,11]=1
                             evoutfile[1,0]=stas.iloc[ii]['Longitude']
                             evoutfile[1,1]=stas.iloc[ii]['Latitude']
                             evoutfile[1,2]=stas.iloc[ii]['Elevation']
@@ -183,7 +184,8 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                             evoutfile[1,7]=sourcedepth
                             evoutfile[1,8]=sourcemag
                             evoutfile[1,9]=ss[ii]
-                            evoutfile[1,10]=1
+                            evoutfile[1,10]=0
+                            evoutfile[1,11]=1
                             # print('Event picks ='+str(len(evoutfile)))
                             tmp=np.random.uniform() # make a random variable
                             if tmp < 0.1: # drop the P
@@ -199,17 +201,34 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                             else:
                                 outfile=np.append(outfile,evoutfile,axis=0)
         
+        # this removes events that have less than 6 picks
+        # print(len(outfile))
+        depths=np.unique(outfile[:,7])
+        indstoremove=[]
+        for pp in range(len(depths)):
+            depth=depths[pp]
+            inds=np.where(outfile[:,7]==depth)[0]
+            if len(inds)<6:    
+                indstoremove.extend(inds)
+        if len(indstoremove)>0:
+            outfile=np.delete(outfile,np.array(indstoremove),0)
+        # print(len(outfile))
+
+        
         # print('Real earthquake picks ='+str(len(outfile)))
         # If too many picks, adjust
         if len(outfile)>batch_length:
             # print("before="+str(len(outfile)))
             deck = list(range(1, len(outfile)))
             np.random.shuffle(deck)
-            deck=np.sort(deck[:np.random.randint(200,300)])
+            deck=np.sort(deck[:np.random.randint(int(0.4*batch_length//2),int(0.6*batch_length//2))])
             outfile=outfile[deck,:]
             # print("after="+str(len(outfile)))
+        # print(len(outfile))
+        # print(batch_length)
+        print("{:.2%} of picks are from events.".format(len(outfile)/batch_length))
         # ADD SYNTHETIC NOISE    
-        outfilen=np.zeros((batch_length-len(outfile),11))
+        outfilen=np.zeros((batch_length-len(outfile),12))
         count=0
         while count < len(outfilen):
             ii=np.random.choice(np.arange(len(stas)))
@@ -224,6 +243,7 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
             outfilen[count,8]=0
             outfilen[count,9]=0
             outfilen[count,10]=0
+            outfilen[count,11]=0
             count+=1
                  
         # COMBINE EQS AND NOISE
@@ -231,14 +251,18 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         inds=np.argsort(allout[:,4])
         allout=allout[inds,:]  
         allout=allout[np.newaxis,:,:]
-        print(allout.shape)
+        # print(allout.shape)
         if allout.shape[1]>batch_length:
             allout=allout[:,:batch_length,:]
         #     print("clip")
         else:
-            allout=np.append(allout,np.zeros((1,batch_length-allout.shape[1],11)),axis=1)
+            allout=np.append(allout,np.zeros((1,batch_length-allout.shape[1],12)),axis=1)
         #    print("add")
-         
+        
+        # DROP TRUE PHASES IF THEY ARENT NEEDED
+        if not phases:
+            allout=np.delete(allout, 10, 2)
+            
         if plots:
             # PLOT RESULTS
             pind=np.where(allout[0,:,3]==0)
@@ -282,8 +306,12 @@ def get_generator():
 
 # generate batch data
 def get_small_generator():
-    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500)
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=5000)
+
+# generate batch data
+def get_phases_generator():
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=5000, phases=True)
 
 if __name__=="__main__":
-    my_data=get_generator()
+    my_data=get_small_generator()
     x=next(my_data)
