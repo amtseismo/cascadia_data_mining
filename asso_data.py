@@ -10,10 +10,12 @@ Splits train, test, and develop datasets into inputs and outputs
 
 import numpy as np
 
-all_data=np.load('comb_data.npy')
-train=np.load('train.npy') 
-test=np.load('test.npy')
-develop=np.load('develop.npy')
+datatype='phases'
+
+all_data=np.load(datatype+'_comb_data.npy')
+train=np.load(datatype+'_train.npy') 
+test=np.load(datatype+'_test.npy')
+develop=np.load(datatype+'_develop.npy')
 
 
 x_train=all_data[train,:,:5]
