@@ -41,6 +41,25 @@ class Checkpoint(tf.keras.callbacks.Callback):
             self.best_loss=logs['loss']
             self.model.save('cp/'+self.tag+'_best_model.h5')
         self.save()
+
+
+def class_loss(y_true,y_pred):
+    loss=tf.keras.losses.binary_crossentropy(
+        y_true[:,:,0], y_pred[:,:,0], from_logits=False, label_smoothing=0
+    )
+
+    return tf.reduce_mean(loss)
+
+def phase_loss(y_true,y_pred):
+    mask=y_true[:,:,0]
+    loss=tf.keras.losses.binary_crossentropy(
+        y_true[:,:,1], y_pred[:,:,1], from_logits=False, label_smoothing=0
+    )
+    return tf.reduce_mean(loss*mask)
+
+def loss(y_true,y_pred):
+    loss=phase_loss(y_true,y_pred)+class_loss(y_true,y_pred)
+    return loss
             
 def build_model(batch_size=None):
 
@@ -64,8 +83,11 @@ def build_model(batch_size=None):
 
     model =tf.keras.models.Model(input_layer,[classification])
     opt=tf.keras.optimizers.Adam(1e-3)
-    model.compile(loss=['binary_crossentropy'],optimizer=opt, metrics=[[]])
+    model.compile(loss=[loss],optimizer=opt, metrics=[[]])
     return model
+
+
+
 
 if __name__=='__main__':
 
