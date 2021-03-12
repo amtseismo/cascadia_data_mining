@@ -53,7 +53,7 @@ def class_loss(y_true,y_pred):
 def phase_loss(y_true,y_pred):
     mask=y_true[:,:,0]
     loss=tf.keras.losses.binary_crossentropy(
-        y_true[:,:,1], y_pred[:,:,1], from_logits=False, label_smoothing=0
+        y_true[:,:,1:], y_pred[:,:,1:], from_logits=False, label_smoothing=0
     )
     return tf.reduce_mean(loss*mask)
 
@@ -85,8 +85,6 @@ def build_model(batch_size=None):
     opt=tf.keras.optimizers.Adam(1e-3)
     model.compile(loss=[loss],optimizer=opt, metrics=[[]])
     return model
-
-
 
 
 if __name__=='__main__':

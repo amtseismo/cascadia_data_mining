@@ -200,32 +200,31 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                                 outfile=np.append(outfile,evoutfile,axis=0)
                             else:
                                 outfile=np.append(outfile,evoutfile,axis=0)
-        
-        # this removes events that have less than 6 picks
-        # print(len(outfile))
-        depths=np.unique(outfile[:,7])
-        indstoremove=[]
-        for pp in range(len(depths)):
-            depth=depths[pp]
-            inds=np.where(outfile[:,7]==depth)[0]
-            if len(inds)<6:    
-                indstoremove.extend(inds)
-        if len(indstoremove)>0:
-            outfile=np.delete(outfile,np.array(indstoremove),0)
-        # print(len(outfile))
 
-        
-        # print('Real earthquake picks ='+str(len(outfile)))
         # If too many picks, adjust
         if len(outfile)>batch_length:
             # print("before="+str(len(outfile)))
             deck = list(range(1, len(outfile)))
             np.random.shuffle(deck)
-            deck=np.sort(deck[:np.random.randint(int(0.4*batch_length//2),int(0.6*batch_length//2))])
+            deck=np.sort(deck[:np.random.randint(int(0.4*batch_length//2),int(0.65*batch_length//2))])
             outfile=outfile[deck,:]
-            # print("after="+str(len(outfile)))
-        # print(len(outfile))
-        # print(batch_length)
+
+        # this removes events that have less than 6 picks
+        print("Pre cull length is:"+str(len(outfile)))
+        depths=np.unique(outfile[:,7])
+        depths=depths[depths!=0]
+        indstoremove=[]
+        for depth in depths:
+            print(depth)
+            inds=np.where(outfile[:,7]==depth)[0]
+            print(indstoremove)
+            if len(inds)<4:    
+                indstoremove.extend(inds)
+        print("Culling "+str(len(np.array(indstoremove))))
+        if len(indstoremove)>0:
+            outfile=np.delete(outfile,np.array(indstoremove),0)
+        print("Post cull length is:"+str(len(outfile)))
+
         print("{:.2%} of picks are from events.".format(len(outfile)/batch_length))
         # ADD SYNTHETIC NOISE    
         outfilen=np.zeros((batch_length-len(outfile),12))
@@ -262,6 +261,8 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         # DROP TRUE PHASES IF THEY ARENT NEEDED
         if not phases:
             allout=np.delete(allout, 10, 2)
+        else:
+            allout=allout[:, :, np.r_[0:5,10:12]]
             
         if plots:
             # PLOT RESULTS
@@ -315,3 +316,8 @@ def get_phases_generator():
 if __name__=="__main__":
     my_data=get_small_generator()
     x=next(my_data)
+    depths=np.unique(x[0,:,7])
+    depths=depths[depths!=0]
+    for depth in depths:
+        inds=np.where(x[0,:,7]==depth)[0]
+        print(len(inds))
