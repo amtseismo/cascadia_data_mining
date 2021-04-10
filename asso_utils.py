@@ -56,7 +56,7 @@ def fix_y_batch_nomag(reg,lab):
     mask=lab[:,:,0]==0
     reg[mask]=0
     return reg,lab
-    
+
 def decode_y_nomag(y):
     minlat, maxlat, minlon, maxlon = 39, 51.5, -132.5, -116.5
     reg,classifier=y
@@ -66,15 +66,35 @@ def decode_y_nomag(y):
     reg[:,:,3]=reg[:,:,3]*(50)
     return reg
 
+def fix_y_batch_nomag_nodep(reg,lab):
+    # Source longitude, latitude, depth, magnitude, travel time
+    minlat, maxlat, minlon, maxlon = 39, 51.5, -132.5, -116.5
+    reg[:,:,0]=(reg[:,:,0]-minlon)/(maxlon-minlon)
+    reg[:,:,1]=(reg[:,:,1]-minlat)/(maxlat-minlat)
+    reg[:,:,4]=reg[:,:,4]/(50)
+    reg=reg[:, :, np.r_[0:2,4:5]]
+    mask=lab[:,:,0]==0
+    reg[mask]=0
+    return reg,lab
+
+def decode_y_nomag_nodep(y):
+    minlat, maxlat, minlon, maxlon = 39, 51.5, -132.5, -116.5
+    reg,classifier=y
+    reg[:,:,0]=reg[:,:,0]*(maxlon-minlon)+minlon
+    reg[:,:,1]=reg[:,:,1]*(maxlat-minlat)+minlat
+    reg[:,:,2]=reg[:,:,2]*(50)
+    return reg
+
 def fix_y_batch_phases(reg,lab):
-    # Source longitude, latitude, depth, magnitude, travel time, true phase
-    reg=reg[:,:,-1] # gets last regression column
-    mask=lab[:,:,0]==0 # makes a mask where the noise is
-    reg[mask]=0 # makes regression values zero at those points
+    # P or S, earthquake or no
+    mask=lab==0 # makes a mask where the noise is
+    reg[mask]=0 # makes P or S zero at those points
     reg=reg[:,:,np.newaxis]
-    tmp=np.concatenate((reg,lab),axis=2)
+    lab=lab[:,:,np.newaxis]
+    # outputs EQ or no, P or S
+    tmp=np.concatenate((lab,reg),axis=2)
     return tmp
     
-def decode_y_phases(y):
-    reg,classifier=y
-    return reg
+# def decode_y_phases(y):
+#     reg,classifier=y
+#     return reg

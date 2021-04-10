@@ -82,7 +82,7 @@ def build_model(batch_size=None):
 
     model =tf.keras.models.Model(input_layer,[classification])
     opt=tf.keras.optimizers.Adam(1e-3)
-    model.compile(loss=[loss], optimizer=opt, metrics=[class_loss, phase_loss])
+    model.compile(loss=[loss],optimizer=opt, metrics=[class_loss, phase_loss])
     return model
 
 
@@ -114,15 +114,13 @@ if __name__=='__main__':
        
     print(model.summary)
     
-    tf.keras.utils.plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
-    
-    # xt=fix_x_batch(x_train.copy())
-    # y_rt=fix_y_batch_phases(*y_train.copy())
+    xt=fix_x_batch(x_train.copy())
+    y_rt=fix_y_batch_phases(*y_train.copy())
  
-    # xd=fix_x_batch(x_develop.copy())
-    # y_rd=fix_y_batch_phases(*y_develop.copy())
+    xd=fix_x_batch(x_develop.copy())
+    y_rd=fix_y_batch_phases(*y_develop.copy())
 
-    # m=model.fit(xt,y_rt,validation_data=(xd,y_rd),
-    #             epochs=100,
-    #             callbacks=[c],
-    #             batch_size=128)
+    m=model.fit(xt,y_rt,validation_data=(xd,y_rd),
+                epochs=100,
+                callbacks=[c],
+                batch_size=128)

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pickle
 import pdb
 import uuid
-from asso_utils import fix_x_batch,fix_y_batch_nomag
+from asso_utils import fix_x_batch,fix_y_batch_nomag_nodep
 
 #from phase_pick_generator import get_generator
 
@@ -20,10 +20,10 @@ def lat_loss(y_true,y_pred):
     mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
     return tf.reduce_mean(tf.square(y_true[:,:,1]-y_pred[:,:,1])*mask)*latfac
 
-def depth_loss(y_true,y_pred):
-    depfac=1/0.01
-    mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-    return tf.reduce_mean(tf.square((y_true[:,:,2]-y_pred[:,:,2]))*mask)*depfac
+# def depth_loss(y_true,y_pred):
+#     depfac=1/0.01
+#     mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
+#     return tf.reduce_mean(tf.square((y_true[:,:,2]-y_pred[:,:,2]))*mask)*depfac
 
 # def mag_loss(y_true,y_pred):
  #   magfac=1/0.02
@@ -33,18 +33,17 @@ def depth_loss(y_true,y_pred):
 def time_loss(y_true,y_pred):
     timefac=1/0.005
     mask=tf.cast(tf.not_equal(y_true[:,:,-1] ,tf.zeros_like(y_true[:,:,-1])),'float32' )
-    return tf.reduce_mean(tf.square(y_true[:,:,3]-y_pred[:,:,3])*mask)*timefac
+    return tf.reduce_mean(tf.square(y_true[:,:,2]-y_pred[:,:,2])*mask)*timefac
     
 def loss(y_true,y_pred):
     
     return (lon_loss(y_true,y_pred)
             +lat_loss(y_true,y_pred)
-            +depth_loss(y_true,y_pred)
             +time_loss(y_true,y_pred))
 
 
 class Checkpoint(tf.keras.callbacks.Callback):
-    log_terms=['val_loss','loss','reg_lon_loss','reg_lat_loss','reg_depth_loss','reg_time_loss','class_loss']
+    log_terms=['val_loss','loss','reg_lon_loss','reg_lat_loss','reg_time_loss','class_loss']
 
     def __init__(self,tag,restore=True):
         self.tag=tag
@@ -98,13 +97,13 @@ def build_model(batch_size=None):
     out_head=tf.keras.layers.Dense(50)(out_head)
     out_head=tf.keras.layers.LeakyReLU()(out_head)
 
-    regression=tf.keras.layers.Dense(4,name='reg')(out_head)
+    regression=tf.keras.layers.Dense(3,name='reg')(out_head)
 
     classification=tf.keras.layers.Dense(1,activation='sigmoid',name='class')(out_head)
 
     model =tf.keras.models.Model(input_layer,[regression,classification])
     opt=tf.keras.optimizers.Adam(1e-3)
-    model.compile(loss=[loss,'binary_crossentropy'],optimizer=opt, metrics=[[lon_loss,lat_loss,depth_loss,time_loss],[]])
+    model.compile(loss=[loss,'binary_crossentropy'],optimizer=opt, metrics=[[lon_loss,lat_loss,time_loss],[]])
     return model
 
 if __name__=='__main__':
@@ -124,14 +123,13 @@ if __name__=='__main__':
     y_test=[all_data[test,:,5:-1],all_data[test,:,-1:]]
     y_develop=[all_data[develop,:,5:-1],all_data[develop,:,-1:]]
 
-    tag='v5'
+    tag='v4'
     c=Checkpoint(tag=tag,restore=True)
     if os.path.exists(c.model_path):
        model= tf.keras.models.load_model('cp/'+tag+'_model.h5',
                                          custom_objects={'loss': loss,
                                                               'lon_loss':lon_loss,
                                                               'lat_loss':lat_loss,
-                                                              'depth_loss':depth_loss,
                                                               'time_loss':time_loss}
                                            ) 
     else:
@@ -139,12 +137,12 @@ if __name__=='__main__':
 
 
     xt=fix_x_batch(x_train.copy())
-    y_rt,y_lt=fix_y_batch_nomag(*y_train.copy())
+    y_rt,y_lt=fix_y_batch_nomag_nodep(*y_train.copy())
  
     xd=fix_x_batch(x_develop.copy())
-    y_rd,y_ld=fix_y_batch_nomag(*y_develop.copy())
+    y_rd,y_ld=fix_y_batch_nomag_nodep(*y_develop.copy())
 
     m=model.fit(xt,[y_rt,y_lt],validation_data=(xd,[y_rd,y_ld]),
-                epochs=500,
+                epochs=150,
                 callbacks=[c],
                 batch_size=128)

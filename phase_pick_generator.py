@@ -81,23 +81,25 @@ latp=np.sin(lat*np.pi/180)
 latp=latp/np.sum(latp)
 
 # # do the shifts and make batches
-def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=10000,duration=7,ri=1800,phases=False):
+def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=10000,duration=7,ri=1800,datatype='orig'):
     while True:
         #defines coefficients for gmm
         a1,a2,a3,a4,a5=-1.96494392,  0.89260686, -0.12470324, -1.43533434, -0.00561138
         outfile=np.zeros((0,12))
-        count=0
+        eqcount=0
         ps=np.zeros((len(stas)))
         ss=np.zeros((len(stas)))
         sourceepoch=0
         length_in_seconds=86400*duration # one day
         while sourceepoch < length_in_seconds: 
-            #print(sourceepoch)
+            eqcount+=1
             sourcelon=np.random.uniform(-132.5,-116.5)
             sourcelat=np.random.choice(lat,p=latp)
             sourcedepth=np.random.uniform(0,100)
             sourcemag=np.random.uniform(1,6) # np.random.exponential(np.log(10)*1)
             dt=np.random.exponential(ri) #(11564)
+            if np.random.uniform() < 0.05:
+                dt=0
             if len(outfile)>0:
                 sourceepoch=dt+sourceepoch
             else:
@@ -166,26 +168,32 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                             evoutfile[0,1]=stas.iloc[ii]['Latitude']
                             evoutfile[0,2]=stas.iloc[ii]['Elevation']
                             evoutfile[0,3]=1
-                            evoutfile[0,4]=ps[ii]+sourceepoch #+np.random.normal(0, 0.05, 1000)
+                            evoutfile[0,4]=ps[ii]+sourceepoch+np.random.uniform(-0.5,0.5)
                             evoutfile[0,5]=sourcelon
                             evoutfile[0,6]=sourcelat
                             evoutfile[0,7]=sourcedepth
                             evoutfile[0,8]=sourcemag
                             evoutfile[0,9]=ps[ii]
                             evoutfile[0,10]=1
-                            evoutfile[0,11]=1
+                            if datatype=="eqcount":
+                                evoutfile[0,11]=eqcount
+                            else:
+                                evoutfile[0,11]=1
                             evoutfile[1,0]=stas.iloc[ii]['Longitude']
                             evoutfile[1,1]=stas.iloc[ii]['Latitude']
                             evoutfile[1,2]=stas.iloc[ii]['Elevation']
                             evoutfile[1,3]=0
-                            evoutfile[1,4]=ss[ii]+sourceepoch #+np.random.normal(0, 0.05, 1000)
+                            evoutfile[1,4]=ss[ii]+sourceepoch+np.random.uniform(-0.5,0.5)
                             evoutfile[1,5]=sourcelon
                             evoutfile[1,6]=sourcelat
                             evoutfile[1,7]=sourcedepth
                             evoutfile[1,8]=sourcemag
                             evoutfile[1,9]=ss[ii]
                             evoutfile[1,10]=0
-                            evoutfile[1,11]=1
+                            if datatype=="eqcount":
+                                evoutfile[1,11]=eqcount
+                            else:
+                                evoutfile[1,11]=1
                             # print('Event picks ='+str(len(evoutfile)))
                             tmp=np.random.uniform() # make a random variable
                             if tmp < 0.1: # drop the P
@@ -197,6 +205,14 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
                                 outfile=np.append(outfile,evoutfile,axis=0)
                             elif tmp >= 0.3 and tmp < 0.4: # make the P a S
                                 evoutfile[0,3]=0
+                                outfile=np.append(outfile,evoutfile,axis=0)
+                            elif tmp >= 0.4 and tmp < 0.5: # put a p where the s is
+                                evoutfile=np.append(evoutfile,evoutfile[1,:].reshape(1,-1),axis=0)
+                                evoutfile[2,3]=1
+                                outfile=np.append(outfile,evoutfile,axis=0)
+                            elif tmp >= 0.5 and tmp < 0.6: # put a s where the p is
+                                evoutfile=np.append(evoutfile,evoutfile[0,:].reshape(1,-1),axis=0)
+                                evoutfile[2,3]=0
                                 outfile=np.append(outfile,evoutfile,axis=0)
                             else:
                                 outfile=np.append(outfile,evoutfile,axis=0)
@@ -210,20 +226,20 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
             outfile=outfile[deck,:]
 
         # this removes events that have less than 6 picks
-        print("Pre cull length is:"+str(len(outfile)))
+       # print("Pre cull length is:"+str(len(outfile)))
         depths=np.unique(outfile[:,7])
         depths=depths[depths!=0]
         indstoremove=[]
         for depth in depths:
-            print(depth)
+            #print(depth)
             inds=np.where(outfile[:,7]==depth)[0]
-            print(indstoremove)
+            #print(indstoremove)
             if len(inds)<4:    
                 indstoremove.extend(inds)
-        print("Culling "+str(len(np.array(indstoremove))))
+       # print("Culling "+str(len(np.array(indstoremove))))
         if len(indstoremove)>0:
             outfile=np.delete(outfile,np.array(indstoremove),0)
-        print("Post cull length is:"+str(len(outfile)))
+        #print("Post cull length is:"+str(len(outfile)))
 
         print("{:.2%} of picks are from events.".format(len(outfile)/batch_length))
         # ADD SYNTHETIC NOISE    
@@ -259,10 +275,17 @@ def my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s
         #    print("add")
         
         # DROP TRUE PHASES IF THEY ARENT NEEDED
-        if not phases:
-            allout=np.delete(allout, 10, 2)
-        else:
+        print(datatype)
+        if datatype=='phases':
             allout=allout[:, :, np.r_[0:5,10:12]]
+        elif datatype=='small':
+            allout=np.delete(allout, 10, 2)
+        elif datatype=='master':
+            allout=allout
+        elif datatype=='eqcount':
+            allout=allout[:, :, np.r_[0:5,11]]
+            
+        print(allout.shape)
             
         if plots:
             # PLOT RESULTS
@@ -307,17 +330,25 @@ def get_generator():
 
 # generate batch data
 def get_small_generator():
-    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=5000)
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=6000, datatype='small')
 
 # generate batch data
 def get_phases_generator():
-    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=5000, phases=True)
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=6000, datatype='phases')
+
+# generate batch data
+def get_eqcount_generator():
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=6000, datatype='eqcount')
+
+# generate batch data
+def get_master_generator():
+    return my_data_generator(lat,latp,c3p,c3s,e3p,e3s,j1p,j1s,k3p,k3s,n3p,n3s,p4p,p4s,s4p,s4s,O0p,O0s,gil7p,gil7s,batch_length=500, duration=1, ri=6000, datatype='master')
 
 if __name__=="__main__":
-    my_data=get_small_generator()
+    my_data=get_eqcount_generator()
     x=next(my_data)
-    depths=np.unique(x[0,:,7])
-    depths=depths[depths!=0]
-    for depth in depths:
-        inds=np.where(x[0,:,7]==depth)[0]
-        print(len(inds))
+    # depths=np.unique(x[0,:,7])
+    # depths=depths[depths!=0]
+    # for depth in depths:
+    #     inds=np.where(x[0,:,7]==depth)[0]
+    #     print(len(inds))
